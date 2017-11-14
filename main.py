@@ -47,6 +47,23 @@ class GuessBot:
     def __init__(self):
         self.groups = []
 
+    def setNumRoots(self, bot, update):
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        numRoots = self.tryConvertToInt(content.replace("/setNumRoots", ""))
+        if numRoots is not None:
+            group.game.numRoots = numRoots
+        
+    def resetScore(self, bot, update):
+        group = self.getGroup(update.effective_chat)
+        group.game.resetScore()
+        bot.send_message(chat_id=group.id, text=group.game.log.dump())
+
+    def startNewGame(self, bot, update):
+        group = self.getGroup(update.effective_chat)
+        group.game.reset()
+        bot.send_message(chat_id=group.id, text=group.game.log.dump())
+        
     def parseMessage(self, bot, update):
         assert update.effective_chat.type == "group"
         group = self.getGroup(update.effective_chat)
@@ -85,8 +102,11 @@ class GuessBot:
         updater = Updater(token)
 
         dispatcher = updater.dispatcher
-        dispatcher.add_handler(MessageHandler(Filters.group, self.parseMessage))
         dispatcher.add_error_handler(self.error)
+        dispatcher.add_handler(CommandHandler("startNewGame", self.startNewGame))
+        dispatcher.add_handler(CommandHandler("resetScore", self.resetScore))
+        dispatcher.add_handler(CommandHandler("setNumRoots", self.setNumRoots))
+        dispatcher.add_handler(MessageHandler(Filters.group, self.parseMessage))
 
         updater.start_polling()
         updater.idle()
