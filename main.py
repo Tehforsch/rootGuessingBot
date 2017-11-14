@@ -48,6 +48,7 @@ class GuessBot:
         self.groups = []
 
     def setNumRoots(self, bot, update):
+        """Set the number of roots that a new game will be initialized with."""
         group = self.getGroup(update.effective_chat)
         content = update.message.text
         numRoots = self.tryConvertToInt(content.replace("/setNumRoots", ""))
@@ -55,11 +56,13 @@ class GuessBot:
             group.game.numRoots = numRoots
         
     def resetScore(self, bot, update):
+        """Reset the score to 0."""
         group = self.getGroup(update.effective_chat)
         group.game.resetScore()
         bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
     def startNewGame(self, bot, update):
+        """Start a new game."""
         group = self.getGroup(update.effective_chat)
         group.game.reset()
         bot.send_message(chat_id=group.id, text=group.game.log.dump())
@@ -96,6 +99,12 @@ class GuessBot:
     def error(self, bot, update, error):
         logger.warning('Update "%s" caused error "%s"', update, error)
 
+    def help(self, bot, update):
+        """You already know what this does."""
+        group = self.getGroup(update.effective_chat)
+        content = "\n".join("/{}: {}".format(name, command.__doc__) for (name, command) in self.commands)
+        bot.send_message(chat_id=group.id, text=content)
+
     def main(self):
         with open("apiToken", "r") as f:
             token = f.readlines()[0].replace("\n", "")
@@ -103,9 +112,15 @@ class GuessBot:
 
         dispatcher = updater.dispatcher
         dispatcher.add_error_handler(self.error)
-        dispatcher.add_handler(CommandHandler("startNewGame", self.startNewGame))
-        dispatcher.add_handler(CommandHandler("resetScore", self.resetScore))
-        dispatcher.add_handler(CommandHandler("setNumRoots", self.setNumRoots))
+        self.commands = [
+                ("startNewGame", self.startNewGame),
+                ("resetScore", self.resetScore),
+                ("setNumRoots", self.setNumRoots),
+                ("help", self.help)
+                ]
+
+        for (name, command) in self.commands:
+            dispatcher.add_handler(CommandHandler(name, command))
         dispatcher.add_handler(MessageHandler(Filters.group, self.parseMessage))
 
         updater.start_polling()
