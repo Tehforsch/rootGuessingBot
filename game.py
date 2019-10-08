@@ -48,6 +48,7 @@ class Game:
         else:
             if not self.guess(guessedNumber):
                 self.turnOrder.nextTurn()
+                self.showCurrentPlayer()
 
     def guess(self, guessedNumber):
         result = self.function((guessedNumber,))
@@ -60,7 +61,10 @@ class Game:
     def setStartingPlayer(self):
         startingPlayer = self.startingPlayerTurnOrder.getPlayerAndMakeTurn()
         self.turnOrder.setPlayer(startingPlayer)
-        self.log.write("It's {}'s turn".format(startingPlayer))
+        self.showCurrentPlayer()
+
+    def showCurrentPlayer(self):
+        self.log.write("It's {}'s turn".format(self.turnOrder.currentPlayer))
 
     def handleWonGame(self):
         self.log.write("{} WINS HE IS AWESOME WOW".format(self.turnOrder.currentPlayer))

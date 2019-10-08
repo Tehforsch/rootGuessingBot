@@ -54,7 +54,7 @@ class GuessBot:
         numRoots = self.tryConvertToInt(content.replace("/setNumRoots", ""))
         if numRoots is not None:
             group.game.numRoots = numRoots
-        
+
     def resetScore(self, bot, update):
         """Reset the score to 0."""
         group = self.getGroup(update.effective_chat)
