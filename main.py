@@ -47,13 +47,41 @@ class GuessBot:
     def __init__(self):
         self.groups = []
 
-    def setNumRoots(self, bot, update):
-        """Set the number of roots that a new game will be initialized with."""
+    def setMinNumRoots(self, bot, update):
+        """Set the minimum number of roots that a new game will be initialized with."""
         group = self.getGroup(update.effective_chat)
         content = update.message.text
-        numRoots = self.tryConvertToInt(content.replace("/setNumRoots", ""))
-        if numRoots is not None:
-            group.game.numRoots = numRoots
+        minNumRoots = self.tryConvertToInt(content.replace("/setMinNumRoots", ""))
+        if minNumRoots is not None:
+            group.game.minNumRoots = minNumRoots
+
+    def setMaxNumRoots(self, bot, update):
+        """Set the maximum number of roots that a new game will be initialized with."""
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        maxNumRoots = self.tryConvertToInt(content.replace("/setMaxNumRoots", ""))
+        if maxNumRoots is not None:
+            group.game.maxNumRoots = maxNumRoots
+
+    def setNumRootsToGuessDownTo(self, bot, update):
+        """Set the number of remaining roots at which the score for the current polynomial is evaluated"""
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        numRootsToGuessDownTo = self.tryConvertToInt(content.replace("/setNumRootsToGuessDownTo", ""))
+        if numRootsToGuessDownTo is not None:
+            group.game.numRootsToGuessDownTo = numRootsToGuessDownTo
+
+    def recap(self, bot, update):
+        """Show all the guessed values in this current game"""
+        group = self.getGroup(update.effective_chat)
+        group.game.recap()
+        bot.send_message(chat_id=group.id, text=group.game.log.dump())
+
+    def roots(self, bot, update):
+        """Show the number of guessed roots in this game for each player."""
+        group = self.getGroup(update.effective_chat)
+        group.game.playerRecap()
+        bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
     def resetScore(self, bot, update):
         """Reset the score to 0."""
@@ -115,7 +143,11 @@ class GuessBot:
         self.commands = [
                 ("startNewGame", self.startNewGame),
                 ("resetScore", self.resetScore),
-                ("setNumRoots", self.setNumRoots),
+                ("setMinNumRoots", self.setMinNumRoots),
+                ("setMaxNumRoots", self.setMaxNumRoots),
+                ("setNumRootsToGuessDownTo", self.setNumRootsToGuessDownTo),
+                ("recap", self.recap),
+                ("roots", self.roots),
                 ("help", self.help)
                 ]
 
