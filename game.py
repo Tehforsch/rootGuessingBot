@@ -79,7 +79,7 @@ class Game:
             self.rootsToGuess.remove(guessedRoot)
             self.turnOrder.currentPlayer.numGuessedRoots += 1
             self.playerRecap()
-            if len(self.rootsToGuess) == self.numRootsToGuessDownTo:
+            if len(self.rootsToGuess) <= self.numRootsToGuessDownTo:
                 self.log.write("That was the final root needed to guess! Let's see who wins")
                 self.handleWonGame()
                 return True
