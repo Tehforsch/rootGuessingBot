@@ -99,7 +99,7 @@ class Game:
             if lastRootGuessed or gameAlreadyWon:
                 if lastRootGuessed:
                     self.log.write("That was the final root you needed to guess! Let's see who wins")
-                if gameAlreadyWon:
+                elif gameAlreadyWon:
                     self.log.write("Damn, nobody can change the outcome anymore")
                 self.handleWonGame()
                 return True
