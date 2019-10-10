@@ -4,7 +4,9 @@ from game import Game
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+from pathlib import Path
 import logging
+import yaml
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -12,11 +14,25 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+saveFolder = "save"
+
 def findById(objectWithId, listOfObjects, constructor):
     for obj in listOfObjects:
         if objectWithId.id == obj.id:
             return obj
     return constructor(objectWithId)
+
+def getNewGroup(chat):
+    saveFile = getSaveFileName(chat)
+    if saveFile.is_file():
+        with saveFile.open("r") as f:
+            return yaml.load(f)
+    else:
+        return Group(chat)
+
+def getSaveFileName(group):
+    return Path(saveFolder, str(group.id))
+
     
 class Player:
     def __init__(self, user):
@@ -42,6 +58,10 @@ class Group:
         logger.info("Registering new player {}".format(player))
         self.players.append(player)
         self.game = Game(self.players[:])
+
+    def save(self):
+        with getSaveFileName(self).open("w") as f:
+            yaml.dump(self, f)
 
 class GuessBot:
     def __init__(self):
@@ -83,10 +103,10 @@ class GuessBot:
         group.game.playerRecap()
         bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
-    def resetScore(self, bot, update):
-        """Reset the score to 0."""
+    def showScore(self, bot, update):
+        """Show the current score"""
         group = self.getGroup(update.effective_chat)
-        group.game.resetScore()
+        group.game.showScore()
         bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
     def startNewGame(self, bot, update):
@@ -98,6 +118,7 @@ class GuessBot:
     def parseMessage(self, bot, update):
         assert update.effective_chat.type == "group"
         group = self.getGroup(update.effective_chat)
+        group.save()
         player = group.getPlayer(update.effective_user)
         content = update.message.text
         reply = self.processGuess(group, player, content)
@@ -118,7 +139,7 @@ class GuessBot:
             return None
 
     def getGroup(self, chat):
-        group = findById(chat, self.groups, Group)
+        group = findById(chat, self.groups, getNewGroup)
         if group not in self.groups:
             logger.info("Registering new group {}".format(group))
             self.groups.append(group)
@@ -142,7 +163,7 @@ class GuessBot:
         dispatcher.add_error_handler(self.error)
         self.commands = [
                 ("startNewGame", self.startNewGame),
-                ("resetScore", self.resetScore),
+                ("score", self.showScore),
                 ("setMinNumRoots", self.setMinNumRoots),
                 ("setMaxNumRoots", self.setMaxNumRoots),
                 ("setNumRootsToGuessDownTo", self.setNumRootsToGuessDownTo),

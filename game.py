@@ -114,11 +114,14 @@ class Game:
             self.log.write("{} WINS HE IS AWESOME WOW".format(player))
             player.score += 1
         self.log.write("Zeroes: {}".format(self.function.roots))
+        self.showScore()
+        self.setStartingPlayer()
+        self.reset()
+
+    def showScore(self):
         self.log.write("The score is: ")
         for player in self.players:
             self.log.write("    {}: {}".format(player, player.score))
-        self.setStartingPlayer()
-        self.reset()
 
     def reset(self):
         self.log.write("Creating a new polynomial with {}-{} roots.".format(self.minNumRoots, self.maxNumRoots))
