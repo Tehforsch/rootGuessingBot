@@ -34,9 +34,9 @@ class Game:
         for player in self.players:
             player.score = 0
             player.numGuessedRoots = 0
-        self.minNumRoots = 2
-        self.maxNumRoots = 6
-        self.numRootsToGuessDownTo = 2
+        self.minNumRoots = 3
+        self.maxNumRoots = 9
+        self.numRootsToGuessDownTo = 3
         self.log = Log()
         self.log.write("Hello and welcome to this amazing game!")
         self.reset()
@@ -45,11 +45,11 @@ class Game:
         self.setStartingPlayer()
 
     def handlePlayerGuess(self, player, guessedNumber):
-        self.guessedValues.add(guessedNumber)
         if not self.turnOrder.isPlayersTurn(player):
             self.log.write("It is not your turn {}".format(player))
             return
         else:
+            self.guessedValues.add(guessedNumber)
             if not self.guess(guessedNumber):
                 self.turnOrder.nextTurn()
                 self.showCurrentPlayer()
@@ -71,7 +71,22 @@ class Game:
 
     def playerRecap(self):
         for player in self.players:
-            self.log.write("{} guessed {} roots so far".format(player.name, player.numGuessedRoots))
+            self.log.write("{} guessed {} roots".format(player.name, player.numGuessedRoots))
+
+    def gameIsAlreadyWon(self):
+        if len(self.players) == 1:
+            return False
+        scores = [player.numGuessedRoots for player in self.players]
+        highestScore = max(scores)
+        # A tie. Game can still be won
+        if scores.count(highestScore) > 1:
+            return False
+        # Otherwise the game is won if the second highest score is at most than the amount of remaining roots away from the highest.
+        scores = set(scores)
+        scores.remove(highestScore)
+        secondHighestScore = max(scores)
+        return highestScore - secondHighestScore > len(self.function.roots) - sum(player.numGuessedRoots for player in self.players) - self.numRootsToGuessDownTo
+        
 
     def handleGuessedRoot(self, guessedRoot):
         if guessedRoot in self.rootsToGuess:
@@ -79,14 +94,19 @@ class Game:
             self.rootsToGuess.remove(guessedRoot)
             self.turnOrder.currentPlayer.numGuessedRoots += 1
             self.playerRecap()
-            if len(self.rootsToGuess) <= self.numRootsToGuessDownTo:
-                self.log.write("That was the final root needed to guess! Let's see who wins")
+            lastRootGuessed = len(self.rootsToGuess) <= self.numRootsToGuessDownTo 
+            gameAlreadyWon = self.gameIsAlreadyWon()
+            if lastRootGuessed or gameAlreadyWon:
+                if lastRootGuessed:
+                    self.log.write("That was the final root you needed to guess! Let's see who wins")
+                if gameAlreadyWon:
+                    self.log.write("Damn, nobody can change the outcome anymore")
                 self.handleWonGame()
                 return True
         else:
             self.log.write("That's a root but it has already been guessed.")
             return False
-        
+
     def handleWonGame(self):
         maxScore = max(player.numGuessedRoots for player in self.players)
         winningPlayers = [player for player in self.players if player.numGuessedRoots == maxScore]
@@ -115,8 +135,12 @@ class Game:
             player.score = 0
     
     def recap(self):
+        if len(self.guessedValues) == 0:
+            return
+        numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
+        print(numberIndentation)
         for guessedValue in sorted(list(self.guessedValues)):
-            self.log.write("f({}) = {:,}".format(guessedValue, self.function(guessedValue)))
+            self.log.write("f({:<2}) = {:>{numberIndentation},}".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation))
 
 class Function:
     def __init__(self, numRoots):
@@ -161,10 +185,13 @@ if __name__ == "__main__":
     p1 = Player("a", 0)
     p2 = Player("b", 1)
     g = Game([p1, p2])
-    for i in range(100):
-        g.handlePlayerGuess(g.turnOrder.currentPlayer, i)
+    for i in range(200):
+        if i % 2 == 0:
+            g.handlePlayerGuess(g.turnOrder.currentPlayer, i // 2)
+        else:
+            g.handlePlayerGuess(g.turnOrder.currentPlayer, 0)
         g.recap()
-        g.playerRecap()
+        # g.playerRecap()
         print(g.log.dump())
         
 
