@@ -95,11 +95,8 @@ class GuessBot:
         """Toggle whether a recap of all the guessed values is shown after each guess."""
         group = self.getGroup(update.effective_chat)
         content = update.message.text
-        try:
-            group.game.autoRecap = not group.game.autoRecap
-        except:
-            group.game.autoRecap = False
-        bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.autoRecap))
+        group.game.autoRecap = not group.game.autoRecap
+        bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.game.autoRecap))
 
     def recap(self, bot, update):
         """Show all the guessed values in this current game"""
