@@ -91,6 +91,16 @@ class GuessBot:
         if numRootsToGuessDownTo is not None:
             group.game.numRootsToGuessDownTo = numRootsToGuessDownTo
 
+    def toggleAutoRecap(self, bot, update):
+        """Toggle whether a recap of all the guessed values is shown after each guess."""
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        try:
+            group.game.autoRecap = not group.game.autoRecap
+        except:
+            group.game.autoRecap = False
+        bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.autoRecap))
+
     def recap(self, bot, update):
         """Show all the guessed values in this current game"""
         group = self.getGroup(update.effective_chat)
@@ -167,6 +177,7 @@ class GuessBot:
                 ("setMinNumRoots", self.setMinNumRoots),
                 ("setMaxNumRoots", self.setMaxNumRoots),
                 ("setNumRootsToGuessDownTo", self.setNumRootsToGuessDownTo),
+                ("toggleAutoRecap", self.toggleAutoRecap),
                 ("recap", self.recap),
                 ("roots", self.roots),
                 ("help", self.help)

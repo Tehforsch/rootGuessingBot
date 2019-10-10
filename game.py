@@ -37,6 +37,7 @@ class Game:
         self.minNumRoots = 3
         self.maxNumRoots = 9
         self.numRootsToGuessDownTo = 3
+        self.autoRecap = True
         self.log = Log()
         self.log.write("Hello and welcome to this amazing game!")
         self.reset()
@@ -52,14 +53,21 @@ class Game:
             self.guessedValues.add(guessedNumber)
             if not self.guess(guessedNumber):
                 self.turnOrder.nextTurn()
-                self.showCurrentPlayer()
+                if self.autoRecap:
+                    self.recap()
+                else:
+                    self.showCurrentPlayer()
 
     def guess(self, guessedNumber):
         result = self.function(guessedNumber)
-        self.log.write("{} guessed. f({}) = {:,}".format(self.turnOrder.currentPlayer, guessedNumber, result))
+        self.writeGuess(guessedNumber)
         if result == 0:
             return self.handleGuessedRoot(guessedNumber)
         return False
+
+    def writeGuess(self, guessedNumber):
+        result = self.function(guessedNumber)
+        self.log.write("{} guessed f({}) = {:,}".format(self.turnOrder.currentPlayer, guessedNumber, result))
 
     def setStartingPlayer(self):
         startingPlayer = self.startingPlayerTurnOrder.getPlayerAndMakeTurn()
@@ -87,7 +95,6 @@ class Game:
         secondHighestScore = max(scores)
         return highestScore - secondHighestScore > len(self.function.roots) - sum(player.numGuessedRoots for player in self.players) - self.numRootsToGuessDownTo
         
-
     def handleGuessedRoot(self, guessedRoot):
         if guessedRoot in self.rootsToGuess:
             self.log.write("That's a new root!")
@@ -141,9 +148,9 @@ class Game:
         if len(self.guessedValues) == 0:
             return
         numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
-        print(numberIndentation)
         for guessedValue in sorted(list(self.guessedValues)):
             self.log.write("f({:<2}) = {:>{numberIndentation},}".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation))
+        self.showCurrentPlayer()
 
 class Function:
     def __init__(self, numRoots):
@@ -193,7 +200,7 @@ if __name__ == "__main__":
             g.handlePlayerGuess(g.turnOrder.currentPlayer, i // 2)
         else:
             g.handlePlayerGuess(g.turnOrder.currentPlayer, 0)
-        g.recap()
+        # g.recap()
         # g.playerRecap()
         print(g.log.dump())
         
