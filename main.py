@@ -131,7 +131,7 @@ class GuessBot:
         content = update.message.text
         reply = self.processGuess(group, player, content)
         if reply is not None and reply != "":
-            bot.send_message(chat_id=group.id, text=reply)
+            bot.send_message(chat_id=group.id, text=reply, parse_mode="markdown")
 
     def processGuess(self, group, player, content):
         guessedNumber = self.tryConvertToInt(content)
