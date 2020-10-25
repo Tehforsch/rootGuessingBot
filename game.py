@@ -145,11 +145,12 @@ class Game:
             player.score = 0
     
     def recap(self):
-        if len(self.guessedValues) == 0:
-            return
-        numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
-        for guessedValue in sorted(list(self.guessedValues)):
-            self.log.write("f({:<2}) = {:>{numberIndentation},}".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation))
+        if len(self.guessedValues) > 0:
+            numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
+            # self.log.write("`", newline=False)
+            for guessedValue in sorted(list(self.guessedValues)):
+                self.log.write("`f({:<2}) = {:>{numberIndentation},}`".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation))
+            # self.log.write("```")
         self.showCurrentPlayer()
 
 class Function:
@@ -175,8 +176,8 @@ class Log:
     def __init__(self):
         self.content = ""
 
-    def write(self, text):
-        self.content = self.content + text + "\n"
+    def write(self, text, newline=True):
+        self.content = self.content + text + ("\n" if newline else "")
 
     def dump(self):
         buf = self.content

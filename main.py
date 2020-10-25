@@ -102,7 +102,8 @@ class GuessBot:
         """Show all the guessed values in this current game"""
         group = self.getGroup(update.effective_chat)
         group.game.recap()
-        bot.send_message(chat_id=group.id, text=group.game.log.dump())
+        print("???")
+        bot.send_message(chat_id=group.id, text=group.game.log.dump(), parse_mode="markdown")
 
     def roots(self, bot, update):
         """Show the number of guessed roots in this game for each player."""
