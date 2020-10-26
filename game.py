@@ -50,6 +50,12 @@ class Game:
             self.log.write("It is not your turn {}".format(player))
             return
         else:
+            if guessedNumber > self.function.upperBound:
+                self.log.write("Guess a number <= {}".format(self.function.upperBound))
+                return
+            if guessedNumber < self.function.lowerBound:
+                self.log.write("Guess a number >= {}".format(self.function.lowerBound))
+                return
             self.guessedValues.add(guessedNumber)
             if not self.guess(guessedNumber):
                 self.turnOrder.nextTurn()
