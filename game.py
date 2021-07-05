@@ -207,8 +207,6 @@ class Function:
         self.lowerBound = 0
         self.upperBound = 100
         self.roots = sorted([random.randint(self.lowerBound, self.upperBound) for i in range(numRoots)])
-        # # normalize polynomial so number of roots is not as obvious
-        # self.prefactor = 1.0 / sum(abs(self.valueWithoutPrefactor(i)) for i in range(self.lowerBound, self.upperBound)) / (self.upperBound - self.lowerBound)
         self.prefactor = 1
 
     def valueWithoutPrefactor(self, x):
