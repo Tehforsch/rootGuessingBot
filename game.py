@@ -58,6 +58,7 @@ class Game:
             self.log.write(
                 "Set the number of guesses to {} for {} and to {} for everyone else.".format(numGuesses, player, numGuesses + self.punishmentForGuessingInARow)
             )
+            self.showCurrentPlayer()
 
     def handlePlayerGuess(self, player, guessedNumber):
         if not self.turnOrder.isPlayersTurn(player):
