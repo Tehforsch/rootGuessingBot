@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 saveFolder = "save"
 
+numGuessSettingIdentifierString = "#"
+
 
 def findById(objectWithId, listOfObjects, constructor):
     for obj in listOfObjects:
@@ -134,7 +136,7 @@ class GuessBot:
     def startNewGame(self, update, context):
         """Start a new game."""
         group = self.getGroup(update.effective_chat)
-        group.game.reset()
+        group.game.resetFunction()
         context.bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
     def showSettings(self, update, context):
@@ -154,10 +156,16 @@ class GuessBot:
             context.bot.send_message(chat_id=group.id, text=reply, parse_mode="markdown")
 
     def processGuess(self, group, player, content):
-        guessedNumber = self.tryConvertToInt(content)
-        if guessedNumber is None:
-            return
-        group.game.handlePlayerGuess(player, guessedNumber)
+        if numGuessSettingIdentifierString in content:
+            numGuesses = self.tryConvertToInt(content.replace(numGuessSettingIdentifierString, ""))
+            if numGuesses is None:
+                return
+            group.game.handlePlayerWantsNumGuesses(player, numGuesses)
+        else:
+            guessedNumber = self.tryConvertToInt(content)
+            if guessedNumber is None:
+                return
+            group.game.handlePlayerGuess(player, guessedNumber)
         return group.game.log.dump()
 
     def tryConvertToInt(self, content):

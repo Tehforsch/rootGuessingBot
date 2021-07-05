@@ -1,33 +1,8 @@
 import random
 import os
-import itertools
-
-
-class TurnOrder:
-    def __init__(self, players):
-        self.players = players
-        self.turnOrder = itertools.cycle(players)
-        self.currentPlayer = next(self.turnOrder)
-
-    def isPlayersTurn(self, player):
-        return player == self.currentPlayer
-
-    def nextTurn(self):
-        self.currentPlayer = next(self.turnOrder)
-
-    def getPlayerAndMakeTurn(self):
-        player = self.currentPlayer
-        self.nextTurn()
-        return player
-
-    def setPlayer(self, player):
-        assert player in self.players
-        self.currentPlayer = player
-        index = self.players.index(player)
-        playerOrder = self.players[index:] + self.players[:index]
-        self.turnOrder = itertools.cycle(playerOrder)
-        # advance once
-        _ = next(self.turnOrder)
+from turnOrder import TurnOrder
+from function import Function
+from log import Log
 
 
 class Game:
@@ -39,13 +14,17 @@ class Game:
         self.minNumRoots = 3
         self.maxNumRoots = 9
         self.numRootsToGuessDownTo = 3
+        self.numRootsToGuessDownTo = 3
+        self.minNumGuessesInARow = 1
+        self.maxNumGuessesInARow = 4
+        self.punishmentForGuessingInARow = (self.minNumGuessesInARow + self.maxNumGuessesInARow) // 2
         self.autoRecap = True
         self.autoPlay = True
         self.log = Log()
         self.log.write("Hello and welcome to this amazing game!")
-        self.reset()
-        self.startingPlayerTurnOrder = TurnOrder(self.players)
-        self.turnOrder = TurnOrder(self.players)
+        self.resetFunction()
+        self.startingPlayerTurnOrder = TurnOrder(self.players, [1 for _ in self.players])
+        self.resetTurnOrder()
         self.setStartingPlayer()
 
     def dumpSettings(self):
@@ -54,32 +33,68 @@ class Game:
         self.numRootsToGuessDownTo = 3
         self.autoRecap = True
         result = f"""minNumRoots = {self.minNumRoots}
-    maxNumRoots = {self.maxNumRoots}
-    numRootsToGuessDownTo = {self.numRootsToGuessDownTo}
-    autoRecap = {self.autoRecap}"""
+                    maxNumRoots = {self.maxNumRoots}
+                    numRootsToGuessDownTo = {self.numRootsToGuessDownTo}
+                    autoRecap = {self.autoRecap}"""
         return "\n".join(line.lstrip() for line in result.split("\n"))
+
+    def handlePlayerWantsNumGuesses(self, player, numGuesses):
+        if not self.turnOrder.isPlayersTurn(player):
+            self.log.write("It is not your turn {}".format(player))
+        elif not self.startingPlayerTurnOrder.isPlayersTurn(player):
+            self.log.write(
+                "Only the starting player is allowed to set the number of guesses, {}. The current starting player is {}".format(
+                    player, self.startingPlayerTurnOrder.currentPlayer
+                )
+            )
+        elif not self.turnOrder.currentPlayersFirstTurn:
+            self.log.write("The number of guesses can only be set on the first guess.")
+        elif numGuesses > self.maxNumGuessesInARow:
+            self.log.write("A maximum of {} guesses is allowed!".format(self.maxNumGuessesInARow))
+        elif numGuesses < self.minNumGuessesInARow + 1:
+            self.log.write("A minimum of {} guesses is allowed!".format(self.minNumGuessesInARow))
+        else:
+            self.resetTurnOrder([numGuesses if player == p else numGuesses + self.punishmentForGuessingInARow for p in self.players])
+            self.log.write(
+                "Set the number of guesses to {} for {} and to {} for everyone else.".format(numGuesses, player, numGuesses + self.punishmentForGuessingInARow)
+            )
 
     def handlePlayerGuess(self, player, guessedNumber):
         if not self.turnOrder.isPlayersTurn(player):
             self.log.write("It is not your turn {}".format(player))
-            return
+        elif guessedNumber > self.function.upperBound:
+            self.log.write("Guess a number <= {}".format(self.function.upperBound))
+        elif guessedNumber < self.function.lowerBound:
+            self.log.write("Guess a number >= {}".format(self.function.lowerBound))
         else:
-            if guessedNumber > self.function.upperBound:
-                self.log.write("Guess a number <= {}".format(self.function.upperBound))
-                return
-            if guessedNumber < self.function.lowerBound:
-                self.log.write("Guess a number >= {}".format(self.function.lowerBound))
-                return
             self.writeGuess(guessedNumber)
             self.guessedValues.add(guessedNumber)
             if not self.guess(guessedNumber):
-                self.turnOrder.nextTurn()
+                self.nextTurn()
                 obviousRoot = self.getFirstObviousRoot()
                 if obviousRoot is not None and self.autoPlay:
                     self.printAutoplayMessage()
                     self.handlePlayerGuess(self.turnOrder.currentPlayer, obviousRoot)
                 else:
                     self.showRecapOrCurrentPlayer()
+
+    def resetTurnOrder(self, numTurns=None):
+        if numTurns is None:
+            numTurns = [self.minNumGuessesInARow for _ in self.players]
+        self.turnOrder = TurnOrder(self.players, numTurns)
+        self.turnOrder.setPlayer(self.startingPlayer)
+
+    def nextTurn(self):
+        self.turnOrder.nextTurn()
+        if self.newRoundJustStarted():
+            self.resetTurnOrder()
+
+    def newRoundJustStarted(self):
+        return self.turnOrder.currentPlayer == self.startingPlayer and self.turnOrder.currentPlayersFirstTurn
+
+    @property
+    def startingPlayer(self):
+        return self.startingPlayerTurnOrder.currentPlayer
 
     def printAutoplayMessage(self):
         self.log.write("Obvious root detected!")
@@ -112,11 +127,11 @@ class Game:
 
     def setStartingPlayer(self):
         startingPlayer = self.startingPlayerTurnOrder.getPlayerAndMakeTurn()
-        self.turnOrder.setPlayer(startingPlayer)
+        self.resetTurnOrder()
         self.showCurrentPlayer()
 
     def showCurrentPlayer(self):
-        self.log.write("It's {}'s turn".format(self.turnOrder.currentPlayer))
+        self.log.write("It's {}'s turn ({} guesses remaining)".format(self.turnOrder.currentPlayer, self.turnOrder.numRemainingGuesses()))
 
     def playerRecap(self):
         for player in self.players:
@@ -166,14 +181,14 @@ class Game:
         self.log.write("Zeroes: {}".format(self.function.roots))
         self.showScore()
         self.setStartingPlayer()
-        self.reset()
+        self.resetFunction()
 
     def showScore(self):
         self.log.write("The score is: ")
         for player in self.players:
             self.log.write("    {}: {}".format(player, player.score))
 
-    def reset(self):
+    def resetFunction(self):
         self.log.write("Creating a new polynomial with {}-{} roots.".format(self.minNumRoots, self.maxNumRoots))
         self.numRoots = random.randint(self.minNumRoots, self.maxNumRoots)
         self.function = Function(self.numRoots)
@@ -200,37 +215,6 @@ class Game:
                 )
             # self.log.write("```")
         self.showCurrentPlayer()
-
-
-class Function:
-    def __init__(self, numRoots):
-        self.lowerBound = 0
-        self.upperBound = 100
-        self.roots = sorted([random.randint(self.lowerBound, self.upperBound) for i in range(numRoots)])
-        self.prefactor = 1
-
-    def valueWithoutPrefactor(self, x):
-        product = 1
-        for p in self.roots:
-            product *= x - p
-        return product
-
-    def __call__(self, x):
-        poly = self.valueWithoutPrefactor(x)
-        return self.prefactor * poly
-
-
-class Log:
-    def __init__(self):
-        self.content = ""
-
-    def write(self, text, newline=True):
-        self.content = self.content + text + ("\n" if newline else "")
-
-    def dump(self):
-        buf = self.content
-        self.content = ""
-        return buf
 
 
 if __name__ == "__main__":
