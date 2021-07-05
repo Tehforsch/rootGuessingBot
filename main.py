@@ -106,6 +106,13 @@ class GuessBot:
         group.game.autoRecap = not group.game.autoRecap
         context.bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.game.autoRecap))
 
+    def toggleAutoPlay(self, update, context):
+        """Toggle whether obvious guesses (a single empty space between a positive and a negative number) are performed for the current player automatically"""
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        group.game.autoPlay = not group.game.autoPlay
+        context.bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.game.autoRecap))
+
     def recap(self, update, context):
         """Show all the guessed values in this current game"""
         group = self.getGroup(update.effective_chat)
@@ -189,6 +196,7 @@ class GuessBot:
             ("setMaxNumRoots", self.setMaxNumRoots),
             ("setNumRootsToGuessDownTo", self.setNumRootsToGuessDownTo),
             ("toggleAutoRecap", self.toggleAutoRecap),
+            ("toggleAutplay", self.toggleAutoPlay),
             ("recap", self.recap),
             ("roots", self.roots),
             ("showSettings", self.showSettings),

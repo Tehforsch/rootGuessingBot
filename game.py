@@ -40,6 +40,7 @@ class Game:
         self.maxNumRoots = 9
         self.numRootsToGuessDownTo = 3
         self.autoRecap = True
+        self.autoPlay = True
         self.log = Log()
         self.log.write("Hello and welcome to this amazing game!")
         self.reset()
@@ -69,17 +70,38 @@ class Game:
             if guessedNumber < self.function.lowerBound:
                 self.log.write("Guess a number >= {}".format(self.function.lowerBound))
                 return
+            self.writeGuess(guessedNumber)
             self.guessedValues.add(guessedNumber)
             if not self.guess(guessedNumber):
                 self.turnOrder.nextTurn()
-                if self.autoRecap:
-                    self.recap()
+                obviousRoot = self.getFirstObviousRoot()
+                if obviousRoot is not None and self.autoPlay:
+                    self.printAutoplayMessage()
+                    self.handlePlayerGuess(self.turnOrder.currentPlayer, obviousRoot)
                 else:
-                    self.showCurrentPlayer()
+                    self.showRecapOrCurrentPlayer()
+
+    def printAutoplayMessage(self):
+        self.log.write("Obvious root detected!")
+
+    def showRecapOrCurrentPlayer(self):
+        if self.autoRecap:
+            self.recap()
+        else:
+            self.showCurrentPlayer()
+
+    def getFirstObviousRoot(self):
+        sortedX = sorted(list(self.guessedValues))
+        for (x1, x2) in zip(sortedX, sortedX[1:]):
+            y1 = self.function(x1)
+            y2 = self.function(x2)
+            yHaveOppositeSigns = y1 * y2 < 0
+            if (x1 + 2 == x2) and yHaveOppositeSigns:
+                return x1 + 1
+        return None
 
     def guess(self, guessedNumber):
         result = self.function(guessedNumber)
-        self.writeGuess(guessedNumber)
         if result == 0:
             return self.handleGuessedRoot(guessedNumber)
         return False
