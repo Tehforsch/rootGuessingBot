@@ -154,7 +154,6 @@ class Game:
         if len(self.guessedValues) > 0:
             numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
             xIndentation = max(len("{}".format(x)) for x in self.guessedValues)
-            print(xIndentation)
             # self.log.write("`", newline=False)
             for guessedValue in sorted(list(self.guessedValues)):
                 self.log.write("`f({:<{xIndentation},}) = {:>{numberIndentation},}`".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation, xIndentation=xIndentation))
