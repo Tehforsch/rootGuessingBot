@@ -28,7 +28,7 @@ def getNewGroup(chat):
     saveFile = getSaveFileName(chat)
     if saveFile.is_file():
         with saveFile.open("r") as f:
-            return yaml.load(f)
+            return yaml.load(f, Loader=yaml.UnsafeLoader)
     else:
         return Group(chat)
 
@@ -130,6 +130,12 @@ class GuessBot:
         group.game.reset()
         context.bot.send_message(chat_id=group.id, text=group.game.log.dump())
 
+    def showSettings(self, update, context):
+        """Display all settings"""
+        group = self.getGroup(update.effective_chat)
+        content = group.game.dumpSettings()
+        context.bot.send_message(chat_id=group.id, text=f"```\n{content}```", parse_mode="markdown")
+
     def parseMessage(self, update, context):
         assert update.effective_chat.type == "group"
         group = self.getGroup(update.effective_chat)
@@ -165,7 +171,6 @@ class GuessBot:
 
     def help(self, update, context):
         """You already know what this does."""
-        print(context.chat_data)
         group = self.getGroup(update.effective_chat)
         content = "\n".join("/{}: {}".format(name, command.__doc__) for (name, command) in self.commands)
         context.bot.send_message(chat_id=group.id, text=content)
@@ -186,6 +191,7 @@ class GuessBot:
             ("toggleAutoRecap", self.toggleAutoRecap),
             ("recap", self.recap),
             ("roots", self.roots),
+            ("showSettings", self.showSettings),
             ("help", self.help),
         ]
 

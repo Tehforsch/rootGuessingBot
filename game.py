@@ -2,6 +2,7 @@ import random
 import os
 import itertools
 
+
 class TurnOrder:
     def __init__(self, players):
         self.players = players
@@ -28,6 +29,7 @@ class TurnOrder:
         # advance once
         _ = next(self.turnOrder)
 
+
 class Game:
     def __init__(self, players):
         self.players = players
@@ -44,6 +46,17 @@ class Game:
         self.startingPlayerTurnOrder = TurnOrder(self.players)
         self.turnOrder = TurnOrder(self.players)
         self.setStartingPlayer()
+
+    def dumpSettings(self):
+        self.minNumRoots = 3
+        self.maxNumRoots = 9
+        self.numRootsToGuessDownTo = 3
+        self.autoRecap = True
+        result = f"""minNumRoots = {self.minNumRoots}
+    maxNumRoots = {self.maxNumRoots}
+    numRootsToGuessDownTo = {self.numRootsToGuessDownTo}
+    autoRecap = {self.autoRecap}"""
+        return "\n".join(line.lstrip() for line in result.split("\n"))
 
     def handlePlayerGuess(self, player, guessedNumber):
         if not self.turnOrder.isPlayersTurn(player):
@@ -99,15 +112,17 @@ class Game:
         scores = set(scores)
         scores.remove(highestScore)
         secondHighestScore = max(scores)
-        return highestScore - secondHighestScore > len(self.function.roots) - sum(player.numGuessedRoots for player in self.players) - self.numRootsToGuessDownTo
-        
+        return (
+            highestScore - secondHighestScore > len(self.function.roots) - sum(player.numGuessedRoots for player in self.players) - self.numRootsToGuessDownTo
+        )
+
     def handleGuessedRoot(self, guessedRoot):
         if guessedRoot in self.rootsToGuess:
             self.log.write("That's a new root!")
             self.rootsToGuess.remove(guessedRoot)
             self.turnOrder.currentPlayer.numGuessedRoots += 1
             self.playerRecap()
-            lastRootGuessed = len(self.rootsToGuess) <= self.numRootsToGuessDownTo 
+            lastRootGuessed = len(self.rootsToGuess) <= self.numRootsToGuessDownTo
             gameAlreadyWon = self.gameIsAlreadyWon()
             if lastRootGuessed or gameAlreadyWon:
                 if lastRootGuessed:
@@ -149,16 +164,21 @@ class Game:
         self.log.write("Resetting the score to 0.")
         for player in self.players:
             player.score = 0
-    
+
     def recap(self):
         if len(self.guessedValues) > 0:
             numberIndentation = max(len("{:,}".format(self.function(x))) for x in self.guessedValues)
             xIndentation = max(len("{}".format(x)) for x in self.guessedValues)
             # self.log.write("`", newline=False)
             for guessedValue in sorted(list(self.guessedValues)):
-                self.log.write("`f({:<{xIndentation},}) = {:>{numberIndentation},}`".format(guessedValue, self.function(guessedValue), numberIndentation=numberIndentation, xIndentation=xIndentation))
+                self.log.write(
+                    "`f({:<{xIndentation},}) = {:>{numberIndentation},}`".format(
+                        guessedValue, self.function(guessedValue), numberIndentation=numberIndentation, xIndentation=xIndentation
+                    )
+                )
             # self.log.write("```")
         self.showCurrentPlayer()
+
 
 class Function:
     def __init__(self, numRoots):
@@ -172,12 +192,13 @@ class Function:
     def valueWithoutPrefactor(self, x):
         product = 1
         for p in self.roots:
-            product *= (x - p)
+            product *= x - p
         return product
 
     def __call__(self, x):
         poly = self.valueWithoutPrefactor(x)
         return self.prefactor * poly
+
 
 class Log:
     def __init__(self):
@@ -191,7 +212,9 @@ class Log:
         self.content = ""
         return buf
 
+
 if __name__ == "__main__":
+
     class Player:
         def __init__(self, name, id_):
             self.name = name
@@ -211,5 +234,3 @@ if __name__ == "__main__":
         # g.recap()
         # g.playerRecap()
         print(g.log.dump())
-        
-
