@@ -8,6 +8,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from pathlib import Path
 import logging
 import yaml
+from util import tryConvertToInt
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -54,7 +55,7 @@ class Player:
 class Group:
     def __init__(self, chat):
         self.id = chat.id
-        self.numMembers = chat.get_members_count()
+        self.numMembers = chat.get_member_count()
         self.players = []
 
     def getPlayer(self, user):
@@ -76,44 +77,6 @@ class Group:
 class GuessBot:
     def __init__(self):
         self.groups = []
-
-    def setMinNumRoots(self, update, context):
-        """Set the minimum number of roots that a new game will be initialized with."""
-        group = self.getGroup(update.effective_chat)
-        content = update.message.text
-        minNumRoots = self.tryConvertToInt(content.replace("/setMinNumRoots", ""))
-        if minNumRoots is not None:
-            group.game.minNumRoots = minNumRoots
-
-    def setMaxNumRoots(self, update, context):
-        """Set the maximum number of roots that a new game will be initialized with."""
-        group = self.getGroup(update.effective_chat)
-        content = update.message.text
-        maxNumRoots = self.tryConvertToInt(content.replace("/setMaxNumRoots", ""))
-        if maxNumRoots is not None:
-            group.game.maxNumRoots = maxNumRoots
-
-    def setNumRootsToGuessDownTo(self, update, context):
-        """Set the number of remaining roots at which the score for the current polynomial is evaluated"""
-        group = self.getGroup(update.effective_chat)
-        content = update.message.text
-        numRootsToGuessDownTo = self.tryConvertToInt(content.replace("/setNumRootsToGuessDownTo", ""))
-        if numRootsToGuessDownTo is not None:
-            group.game.numRootsToGuessDownTo = numRootsToGuessDownTo
-
-    def toggleAutoRecap(self, update, context):
-        """Toggle whether a recap of all the guessed values is shown after each guess."""
-        group = self.getGroup(update.effective_chat)
-        content = update.message.text
-        group.game.autoRecap = not group.game.autoRecap
-        context.bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.game.autoRecap))
-
-    def toggleAutoPlay(self, update, context):
-        """Toggle whether obvious guesses (a single empty space between a positive and a negative number) are performed for the current player automatically"""
-        group = self.getGroup(update.effective_chat)
-        content = update.message.text
-        group.game.autoPlay = not group.game.autoPlay
-        context.bot.send_message(chat_id=group.id, text="Auto-recap set to {}".format(group.game.autoRecap))
 
     def recap(self, update, context):
         """Show all the guessed values in this current game"""
@@ -145,6 +108,18 @@ class GuessBot:
         content = group.game.dumpSettings()
         context.bot.send_message(chat_id=group.id, text=f"```\n{content}```", parse_mode="markdown")
 
+    def setParam(self, update, context):
+        """Set game parameters"""
+        group = self.getGroup(update.effective_chat)
+        content = update.message.text
+        paramNameValueString = content.replace("/set ", "")
+        paramNameValue = paramNameValueString.split(" ")
+        if len(paramNameValue) == 2:
+            response = group.game.settings.set(*paramNameValue)
+        else:
+            response = group.game.settings.showHelp()
+        context.bot.send_message(chat_id=group.id, text=f"```\n{response}```", parse_mode="markdown")
+
     def parseMessage(self, update, context):
         assert update.effective_chat.type == "group"
         group = self.getGroup(update.effective_chat)
@@ -157,22 +132,16 @@ class GuessBot:
 
     def processGuess(self, group, player, content):
         if numGuessSettingIdentifierString in content:
-            numGuesses = self.tryConvertToInt(content.replace(numGuessSettingIdentifierString, ""))
+            numGuesses = tryConvertToInt(content.replace(numGuessSettingIdentifierString, ""))
             if numGuesses is None:
                 return
             group.game.handlePlayerWantsNumGuesses(player, numGuesses)
         else:
-            guessedNumber = self.tryConvertToInt(content)
+            guessedNumber = tryConvertToInt(content)
             if guessedNumber is None:
                 return
             group.game.handlePlayerGuess(player, guessedNumber)
         return group.game.log.dump()
-
-    def tryConvertToInt(self, content):
-        try:
-            return int(content)
-        except (ValueError, TypeError) as e:
-            return None
 
     def getGroup(self, chat):
         group = findById(chat, self.groups, getNewGroup)
@@ -200,15 +169,11 @@ class GuessBot:
         self.commands = [
             ("startNewGame", self.startNewGame),
             ("score", self.showScore),
-            ("setMinNumRoots", self.setMinNumRoots),
-            ("setMaxNumRoots", self.setMaxNumRoots),
-            ("setNumRootsToGuessDownTo", self.setNumRootsToGuessDownTo),
-            ("toggleAutoRecap", self.toggleAutoRecap),
-            ("toggleAutplay", self.toggleAutoPlay),
             ("recap", self.recap),
             ("roots", self.roots),
             ("showSettings", self.showSettings),
             ("help", self.help),
+            ("set", self.setParam),
         ]
 
         for (name, command) in self.commands:
