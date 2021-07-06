@@ -121,7 +121,7 @@ class Game:
         self.showCurrentPlayer()
 
     def showCurrentPlayer(self):
-        self.log.write("It's {}'s turn ({} guesses remaining)".format(self.turnOrder.currentPlayer, self.turnOrder.numRemainingGuesses()))
+        self.log.write("It's {}'s turn ({} guesses remaining, serve: {})".format(self.turnOrder.currentPlayer, self.turnOrder.numRemainingGuesses(), self.startingPlayer))
 
     def playerRecap(self):
         for player in self.players:
