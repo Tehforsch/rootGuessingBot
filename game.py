@@ -7,11 +7,10 @@ from gameSettings import GameSettings
 
 
 class Game:
-    def __init__(self, players):
+    def __init__(self, players, settings=None):
         self.players = players
-        self.settings = GameSettings()
+        self.settings = GameSettings() if settings is None else settings
         for player in self.players:
-            player.score = 0
             player.numGuessedRoots = 0
         self.log = Log()
         self.log.write("Hello and welcome to this amazing game!")
@@ -21,7 +20,6 @@ class Game:
         self.setStartingPlayer()
 
     def dumpSettings(self):
-        print(self.settings)
         return "\n".join("{} = {}".format(k, v) for (k, v) in self.settings.iterVariables())
 
     def handlePlayerWantsNumGuesses(self, player, numGuesses):

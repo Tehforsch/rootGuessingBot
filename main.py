@@ -9,6 +9,7 @@ from pathlib import Path
 import logging
 import yaml
 from util import tryConvertToInt
+from gameSettings import GameSettings
 
 # Enable logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -31,9 +32,13 @@ def getNewGroup(chat):
     saveFile = getSaveFileName(chat)
     if saveFile.is_file():
         with saveFile.open("r") as f:
-            return yaml.load(f, Loader=yaml.UnsafeLoader)
+            result = yaml.load(f, Loader=yaml.UnsafeLoader)
+            if result is None:
+                return None
+            print("Found group in save file", result)
+            return Group(*result)
     else:
-        return Group(chat)
+        return Group(chat.id)
 
 
 def getSaveFileName(group):
@@ -53,10 +58,20 @@ class Player:
 
 
 class Group:
-    def __init__(self, chat):
-        self.id = chat.id
-        self.numMembers = chat.get_member_count()
-        self.players = []
+    def __init__(self, _id, players=None, settings=None):
+        self.id = _id
+        if players is None:
+            self.players = []
+            self.game = None
+        else:
+            self.players = players
+            if settings is not None:
+                # Make sure we update the settings instead of using
+                # the one we read, in case the save file used a
+                # previous version of the settings class in which some
+                # parameters were not available
+                settings = GameSettings().update(settings)
+            self.game = Game(players, settings)
 
     def getPlayer(self, user):
         player = findById(user, self.players, Player)
@@ -67,11 +82,13 @@ class Group:
     def addPlayer(self, player):
         logger.info("Registering new player {}".format(player))
         self.players.append(player)
-        self.game = Game(self.players[:])
+        previousSettings = None if self.game is None else self.game.settings
+        self.game = Game(self.players[:], previousSettings)
 
     def save(self):
         with getSaveFileName(self).open("w") as f:
-            yaml.dump(self, f)
+            if self.game is not None:
+                yaml.dump([self.id, self.players, self.game.settings], f)
 
 
 class GuessBot:
@@ -118,17 +135,18 @@ class GuessBot:
             response = group.game.settings.set(*paramNameValue)
         else:
             response = group.game.settings.showHelp()
+        group.save()
         context.bot.send_message(chat_id=group.id, text=f"```\n{response}```", parse_mode="markdown")
 
     def parseMessage(self, update, context):
         assert update.effective_chat.type == "group"
         group = self.getGroup(update.effective_chat)
-        group.save()
         player = group.getPlayer(update.effective_user)
         content = update.message.text
         reply = self.processGuess(group, player, content)
         if reply is not None and reply != "":
             context.bot.send_message(chat_id=group.id, text=reply, parse_mode="markdown")
+        group.save()
 
     def processGuess(self, group, player, content):
         if numGuessSettingIdentifierString in content:

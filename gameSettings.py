@@ -44,5 +44,8 @@ class GameSettings(SimpleNamespace):
             if type(self.__dict__[k]) == bool:
                 v = bool(v)
             self.__dict__[k] = v
-            print(self)
             return "Set {} to {}.".format(k, v)
+
+    def update(self, settings):
+        for (k, v) in settings.iterVariables():
+            self.__dict__[k] = v
