@@ -131,8 +131,6 @@ class GuessBot:
         response = "Serve: {}".format(group.game.getStartingPlayerName())
         context.bot.send_message(chat_id=group.id, text=response, parse_mode="markdown")
 
-
-
     def setParam(self, update, context):
         """Set game parameters"""
         group = self.getGroup(update.effective_chat)
@@ -154,6 +152,7 @@ class GuessBot:
         reply = self.processGuess(group, player, content)
         if reply is not None and reply != "":
             context.bot.send_message(chat_id=group.id, text=reply, parse_mode="markdown")
+            context.bot.delete_message(chat_id=group.id, message_id=update.message.message_id)
         group.save()
 
     def processGuess(self, group, player, content):
