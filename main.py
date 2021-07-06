@@ -125,6 +125,14 @@ class GuessBot:
         content = group.game.dumpSettings()
         context.bot.send_message(chat_id=group.id, text=f"```\n{content}```", parse_mode="markdown")
 
+    def serve(self, update, context):
+        """Show whose turn it is to serve."""
+        group = self.getGroup(update.effective_chat)
+        response = "Serve: {}".format(group.game.getStartingPlayerName())
+        context.bot.send_message(chat_id=group.id, text=response, parse_mode="markdown")
+
+
+
     def setParam(self, update, context):
         """Set game parameters"""
         group = self.getGroup(update.effective_chat)
@@ -191,6 +199,7 @@ class GuessBot:
             ("roots", self.roots),
             ("showSettings", self.showSettings),
             ("help", self.help),
+            ("serve", self.serve),
             ("set", self.setParam),
         ]
 

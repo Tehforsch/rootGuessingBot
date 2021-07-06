@@ -65,6 +65,9 @@ class Game:
                 else:
                     self.showRecapOrCurrentPlayer()
 
+    def getStartingPlayerName(self):
+        return "{}".format(self.startingPlayer)
+
     def resetTurnOrder(self, numTurns=None):
         if numTurns is None:
             numTurns = [self.settings.minNumGuessesInARow for _ in self.players]
